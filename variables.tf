@@ -1,5 +1,5 @@
 variable "vpc_name" {
-  default = "quyennv-tf-vpc"
+  default = "main"
 }
 variable "cidrvpc" {
   default = "10.0.0.0/16"
@@ -52,7 +52,7 @@ variable "bastion_definition" {
       bastion_monitoring          = true
       bastion_name                = "bastion"
       bastion_public_key          = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDWBo4K5WRbXPsldPwfV+OklXw+Sa8Rt+fJWPW4xGy/QL2M9j+PDaH4N+Lh29GanaNugMpmzGgDH0cb3DtgSbBlld9YKpO57Ew4alAjoIm/3qJRIIdTu8xMrvm8dvSEs760/MUoqxrt04ExPmvghy3hoyTBpYOwUWnc8R2KP5gmrzldbt1lyKytHujHhFel4aeefxctRFZTfbt7+2X5QE4dMB7po55soxTkcGRyghd8/RbJJYi1jvuA5zU1ecpetgu6DtPkcKWKJMz+e6y2N4xHyg8r8UU28O4eJ+LXQQA48HbX8zXzwteSOBS7b1C42yXFwnQXct+QR2X7D88GkAJt rsa-key-20220711"
-      trusted_ips                 = ["1.53.190.203/32"]
+      trusted_ips                 = ["42.119.163.140/32"]
       user_data_base64            = null
       ext-tags = {
         "fucnt" = "demo-tf"
