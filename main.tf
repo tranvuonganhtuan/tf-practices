@@ -1,101 +1,38 @@
-
-#create the vpc
-resource "aws_vpc" "quyennv-vpc" {
-  cidr_block = var.cidrvpc
-
-  tags = var.tags
+locals {
+  azs = length(data.aws_availability_zones.available.names)
 }
 
-#create the public subnet
-resource "aws_subnet" "public" {
-
-  count             = var.az_count
-  cidr_block        = cidrsubnet(aws_vpc.quyennv-vpc.cidr_block, 8, count.index)
-  availability_zone = data.aws_availability_zones.available.names[count.index]
-  vpc_id            = aws_vpc.quyennv-vpc.id
-  tags = merge({
-    Name = "${var.vpc_name}-public-subnet"
-    },
-  var.tags)
+#CALLING MODULE NETWORK TO CREATE THE VPC
+module "vpc" {
+  source   = "./_modules/network"
+  azs      = local.azs
+  cidrvpc  = var.cidrvpc
+  azname   = data.aws_availability_zones.available.names
+  vpc_name = var.vpc_name
+  tags     = var.tags
 }
 
-#create internet gateway
-resource "aws_internet_gateway" "main-igw" {
-  vpc_id = aws_vpc.quyennv-vpc.id
-  tags = merge({
-    Name = "${var.vpc_name}-igw"
-    },
-  var.tags)
-}
+#CALLING MODULE EC2 TO CREATE THE EC2 INSTANCE 
 
-resource "aws_route" "main-route" {
-  route_table_id         = aws_vpc.quyennv-vpc.main_route_table_id
-  destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.main-igw.id
-}
-
-#assosicate the public subnet to main route table with igw
-resource "aws_route_table_association" "public-subnet-rtb" {
-  count          = var.az_count
-  subnet_id      = element(aws_subnet.public.*.id, count.index)
-  route_table_id = aws_vpc.quyennv-vpc.main_route_table_id
-
-}
-
-#create the private subnet
-resource "aws_subnet" "private" {
-
-  count             = var.az_count
-  cidr_block        = cidrsubnet(aws_vpc.quyennv-vpc.cidr_block, 8, count.index + var.az_count)
-  availability_zone = data.aws_availability_zones.available.names[count.index]
-  vpc_id            = aws_vpc.quyennv-vpc.id
-  tags = merge({
-    Name = "${var.vpc_name}-private-subnet"
-    },
-  var.tags)
-}
-
-#create the natgate way
-resource "aws_eip" "ngweip" {
-  count = var.az_count
-  tags = merge(
-    {
-      ext-name = "${var.vpc_name}-ngw-eip-${count.index}"
-    },
-    var.tags
+module "ec2" {
+  depends_on = [
+    module.vpc
+  ]
+  source                      = "./_modules/ec2"
+  for_each                    = var.bastion_definition
+  vpc_id                      = module.vpc.vpc_id
+  bastion_instance_class      = each.value.bastion_instance_class
+  bastion_name                = each.value.bastion_name
+  bastion_public_key          = each.value.bastion_public_key
+  trusted_ips                 = toset(each.value.trusted_ips)
+  user_data_base64            = each.value.user_data_base64
+  bastion_ami                 = each.value.bastion_ami
+  associate_public_ip_address = each.value.associate_public_ip_address
+  public_subnet_id            = module.vpc.public_subnet_id[0]
+  bastion_monitoring          = each.value.bastion_monitoring
+  default_tags = merge(
+    var.tags,
+    each.value.ext-tags
   )
-}
-resource "aws_nat_gateway" "ngw" {
-  count         = var.az_count
-  subnet_id     = element(aws_subnet.private.*.id, count.index)
-  allocation_id = element(aws_eip.ngweip.*.id, count.index)
-  tags = merge(
-    { ext-name = "${var.vpc_name}-ngw-eip-${count.index}" }
-    ,
-    var.tags
-  )
-}
-#create the route table for private subnet
-resource "aws_route_table" "private_rtb" {
-  count  = var.az_count
-  vpc_id = aws_vpc.quyennv-vpc.id
 
-  #define routete for the private subnet
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = element(aws_nat_gateway.ngw.*.id, count.index)
-  }
-  tags = merge(
-    {
-      ext-name = "${var.vpc_name}-private-rtb-${count.index}"
-    },
-    var.tags
-  )
-}
-
-#asosicate the private subnets to private route tables
-resource "aws_route_table_association" "private-subnet-rtb" {
-  count          = var.az_count
-  subnet_id      = element(aws_subnet.private.*.id, count.index)
-  route_table_id = element(aws_route_table.private_rtb.*.id, count.index)
 }
