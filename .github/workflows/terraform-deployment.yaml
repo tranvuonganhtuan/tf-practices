@@ -26,10 +26,6 @@ jobs:
           terraform_version: 1.6.3
           terraform_wrapper: false
 
-      - name: "Init tf"
-        run: |
-          terraform init -backend-config=dev.conf
-
       - name: "Create namespace"
         run: "terraform workspace new dev"
         continue-on-error: true
@@ -38,15 +34,15 @@ jobs:
         run: "terraform workspace select dev"
         continue-on-error: true
 
+      - name: "Init tf"
+        run: |
+          terraform init -backend-config=dev.conf
+
       - name: "Verify the tfvars "
         run: "terraform plan -var-file=./envs/dev.tfvars"
 
       - name: "apply the tfvars "
         run: "terraform apply  -var-file=./envs/dev.tfvars --auto-approve"
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-        continue-on-error: true
 
-      
+      - name: "Destroy the resources"
+        run: "terraform destroy -var-file=./envs/dev.tfvars --auto-approve"
