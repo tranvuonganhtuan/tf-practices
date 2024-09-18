@@ -26,7 +26,9 @@ jobs:
       - name: "TF login"
         run: |
           sed -i "s|TF_API_TOKEN|${{ secrets.TF_GITHUB_ACTION_TOKEN }}|g" ./tfcredential.json
-          cat ./tfcredential.json
+          mkdir -p ~/.terraform.d/
+          cp -R ./tfcredential.json ~/.terraform.d/credentials.tfrc.json
+          cat ~/.terraform.d/credentials.tfrc.json
 
       - name: "Init tf"
         run: "terraform init"
