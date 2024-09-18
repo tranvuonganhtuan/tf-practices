@@ -1,4 +1,5 @@
-TOKEN=pBOo72nLzYQHUw.atlasv1.Io1OILrbq2GHi4xiazeCjHs1cgJ1O4gsn9FwLzca4QaJlPIaC5y6cxdCeWBQtdRla6c
+TOKEN=${TF_GITHUB_ACTION_TOKEN}
+echo "the token ${TF_GITHUB_ACTION_TOKEN}"
 curl \
   --header "Authorization: Bearer $TOKEN" \
   --header "Content-Type: application/vnd.api+json" \

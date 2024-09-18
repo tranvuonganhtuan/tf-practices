@@ -23,9 +23,11 @@ jobs:
           terraform_wrapper: false
       
       - name: "TF login tf cloud"
+        env: 
+          TF_GITHUB_ACTION_TOKEN: ${{ secrets.TF_GITHUB_ACTION_TOKEN }}
         run: |
           sh ./tf-login.sh
-          
+
       - name: "Init tf"
         run: "terraform init"
 
