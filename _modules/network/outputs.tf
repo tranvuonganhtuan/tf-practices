@@ -5,11 +5,13 @@ output "vpc_id" {
 #export the subnet public
 
 output "public_subnet_id" {
-  value = data.aws_subnets.public.ids
+  # value = data.aws_subnets.public.ids
+  value = aws_subnet.public.*.id
 }
 
 output "private_subnet_id" {
-  value = data.aws_subnets.private.ids
+  # value = data.aws_subnets.private.ids
+  value = aws_subnet.private.*.id
 }
 
 output "public_subnet_ids" {
