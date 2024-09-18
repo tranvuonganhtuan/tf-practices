@@ -24,5 +24,13 @@ jobs:
       - name: "Init tf"
         run: "terraform init"
 
-      - name: "Get tf workspace"
-        run: "terraform workspace show"
+      - name: "Get tf workspace and create the workspace"
+        run: "terraform workspace new prod"
+      
+      - name: "Checkout namespace"
+        run: "terraform workspace select prod"
+
+      - name: "Verify the prod tfvars "
+        run: "terraform plan -var-file=./envs/prod.tfvars"
+
+      
