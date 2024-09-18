@@ -6,6 +6,7 @@ on:
   pull_request:
     branches:
       - master
+
 jobs: 
   terraform: 
     name: "Terraform provision"
@@ -22,12 +23,6 @@ jobs:
           terraform_version: 1.6.3
           terraform_wrapper: false
       
-      - name: "TF login tf cloud"
-        env: 
-          TF_GITHUB_ACTION_TOKEN: ${{ secrets.TF_GITHUB_ACTION_TOKEN }}
-        run: |
-          sh ./tf-login.sh
-
       - name: "Init tf"
         run: "terraform init"
 
@@ -44,10 +39,18 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
 
+      - name: "TF login"
+        run: |
+          terraform login -token="${{ secrets.TF_GITHUB_ACTION_TOKEN }}" -hostname="${{ secrets.TF_CLOUD_ORGANIZATION }}" -organization="${{ secrets.TF_CLOUD_ORGANIZATION }}"
+
       - name: "apply the prod tfvars "
         run: "terraform apply -var-file=./envs/prod.tfvars --auto-approve"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
+          TF_CLOUD_ORGANIZATION: "vti-practices-tf"
+          TF_API_TOKEN: "${{ secrets.TF_GITHUB_ACTION_TOKEN }}"
+          TF_WORKSPACE: "prod"
+          CONFIG_DIRECTORY: "./"
       
