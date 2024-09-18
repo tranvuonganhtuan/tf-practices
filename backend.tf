@@ -1,7 +1,12 @@
 terraform {
-  backend "s3" {
-    bucket = "vtiquyennvtfstate"
-    key    = "tfstate"
-    region = "ap-southeast-1"
+  cloud {
+
+    organization = "vti-practices-tf"
+
+    workspaces {
+      name = "prod"
+    }
   }
 }
+
+

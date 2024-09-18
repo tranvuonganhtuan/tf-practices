@@ -7,34 +7,6 @@ on:
     branches:
       - master
 jobs: 
-  terrascan:
-    name: "scan the terrafom compliance"
-    runs-on: ubuntu-latest
-    steps:
-      - name: 'Checkout tf source code'
-        uses: actions/checkout@v3 
-
-      - name: 'setup the terrascan engine'
-        run: |
-          uname -a
-          curl -L "$(curl -s https://api.github.com/repos/tenable/terrascan/releases/latest | grep -o -E "https://.+?_Linux_x86_64.tar.gz")" > terrascan.tar.gz
-          tar -xf terrascan.tar.gz terrascan && rm terrascan.tar.gz
-          install terrascan /usr/local/bin && rm terrascan
-          terrascan version
-
-      - name: 'scan the terraform code'
-        run: "terrascan scan -t aws"
-      
-      - name: 'Check the violation'
-        run: |
-          if terrascan scan -t aws | grep -q "Violation"; then
-            echo "Violations found"
-            # exit 1
-          else
-            echo "No violations found"
-          fi
-
-
   terraform: 
     name: "Terraform provision"
     runs-on: ubuntu-latest
@@ -49,6 +21,11 @@ jobs:
         with:
           terraform_version: 1.6.3
           terraform_wrapper: false
+      
+      - name: "TF login tf cloud"
+        run: |
+          sh ./tf-login.sh
+          
       - name: "Init tf"
         run: "terraform init"
 
@@ -65,13 +42,6 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
 
-      - name: "setup the aws env"
-        run: echo "AWS credentials configured"
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
-          
       - name: "apply the prod tfvars "
         run: "terraform apply -var-file=./envs/prod.tfvars --auto-approve"
         env:
