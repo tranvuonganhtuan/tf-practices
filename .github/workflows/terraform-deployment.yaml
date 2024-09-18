@@ -38,11 +38,11 @@ jobs:
         run: "terraform workspace select dev"
         continue-on-error: true
 
-      - name: "Verify the prod tfvars "
-        run: "terraform plan -var-file=./envs/prod.tfvars"
+      - name: "Verify the tfvars "
+        run: "terraform plan -var-file=./envs/dev.tfvars"
 
-      - name: "apply the prod tfvars "
-        run: "terraform apply  -var-file=./envs/prod.tfvars --auto-approve"
+      - name: "apply the tfvars "
+        run: "terraform apply  -var-file=./envs/dev.tfvars --auto-approve"
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
