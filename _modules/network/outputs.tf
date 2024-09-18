@@ -11,3 +11,7 @@ output "public_subnet_id" {
 output "private_subnet_id" {
   value = data.aws_subnets.private.ids
 }
+
+output "public_subnet_ids" {
+  value = aws_subnet.public.*.id
+}

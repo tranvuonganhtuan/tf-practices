@@ -15,8 +15,7 @@ module "ec2_instance" {
   monitoring                  = var.bastion_monitoring
   vpc_security_group_ids      = [aws_security_group.bastion-sg.id]
   subnet_id                   = var.public_subnet_id
-
-  user_data_base64 = var.user_data_base64
+  user_data_base64            = var.user_data_base64
 
   volume_tags = var.default_tags
   tags        = var.default_tags
