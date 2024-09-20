@@ -38,4 +38,4 @@ jobs:
           terraform init -backend-config=dev.conf
 
       - name: "Destroy the resources"
-        run: "terraform destroy -var-file=./envs/dev.tfvars --auto-approve"
+        run: "terraform destroy --auto-approve"
