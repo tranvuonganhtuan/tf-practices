@@ -35,13 +35,13 @@ module "eks_public_alb_security_group" {
 
   name        = "${var.eks_cluster_name[terraform.workspace]}-eks-public-ingress"
   description = "Security group for the public ALB"
-  vpc_id      = module.vpc.vpc_id
+  vpc_id      = var.vpc_id
 
   ingress_cidr_blocks = ["0.0.0.0/0"]
   ingress_rules       = ["http-80-tcp", "https-443-tcp"]
   egress_rules        = ["all-tcp"]
 
-  tags = lvar.tags
+  tags = var.tags
 }
 
 module "eks_private_alb_security_group" {
@@ -50,7 +50,7 @@ module "eks_private_alb_security_group" {
 
   name        = "${var.eks_cluster_name[terraform.workspace]}-eks-private-ingress"
   description = "Security group for the private ALB"
-  vpc_id      = module.vpc.vpc_id
+  vpc_id      = var.vpc_id
 
   ingress_cidr_blocks = ["0.0.0.0/0"]
   ingress_rules       = ["http-80-tcp", "https-443-tcp"]
@@ -132,15 +132,15 @@ module "eks" {
 
   cluster_name    = var.eks_cluster_name
   cluster_version = var.eks_cluser_enginee_version
-  vpc_id          = module.vpc.vpc_id
-  subnet_ids      = module.vpc.private_subnets
+  vpc_id          = var.vpc_id
+  subnet_ids      = var.private_subnet_ids
 
   ## https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html
   # enable_irsa = true
 
   self_managed_node_group_defaults = {
 
-    ami_id = "ami-01bb732da5029d896"
+    ami_id = var.ami_id
     target_group_arns = concat(
       module.eks_public_alb.target_group_arns,
       module.eks_private_alb.target_group_arns
@@ -169,7 +169,7 @@ module "eks" {
     for private_subnet in var.private_subnet_ids : {
       worker_group = {
         name          = "${var.eks_cluser_enginee_version}-eks-worker-ondemand-${private_subnet}"
-        instance_type = var.var.instance_types
+        instance_type = var.instance_types
         subnets       = tolist([private_subnet])
 
         ami_id = var.ami_id
