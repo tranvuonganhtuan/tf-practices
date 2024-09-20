@@ -5,7 +5,7 @@ module "eks_public_alb" {
   source  = "terraform-aws-modules/alb/aws"
   version = "6.7.0"
 
-  name = "${var.eks_cluster_name[terraform.workspace]}-eks-private-ingress"
+  name = "${var.eks_cluster_name}-eks-private-ingress"
 
   load_balancer_type         = "application"
   enable_deletion_protection = false
@@ -71,7 +71,7 @@ module "eks_private_alb" {
   source  = "terraform-aws-modules/alb/aws"
   version = "6.7.0"
 
-  name = "${var.eks_cluster_name[terraform.workspace]}-eks-private-ingress"
+  name = "${var.eks_cluster_name}-eks-private-ingress"
 
   load_balancer_type         = "application"
   enable_deletion_protection = false
@@ -136,7 +136,7 @@ module "eks_nodes_custom_security_group" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "3.18.0"
 
-  name        = "${var.eks_cluster_name[terraform.workspace]}-eks-nodes-custom"
+  name        = "${var.eks_cluster_name}-eks-nodes-custom"
   description = "Additional security group for EKS Worker Nodes: E.g: ALB, VPN"
   vpc_id      = var.vpc_id
 
@@ -164,7 +164,7 @@ module "eks_public_alb_security_group" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "3.18.0"
 
-  name        = "${var.eks_cluster_name[terraform.workspace]}-eks-public-ingress"
+  name        = "${var.eks_cluster_name}-eks-public-ingress"
   description = "Security group for the public ALB"
   vpc_id      = var.vpc_id
 
@@ -179,7 +179,7 @@ module "eks_private_alb_security_group" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "3.18.0"
 
-  name        = "${var.eks_cluster_name[terraform.workspace]}-eks-private-ingress"
+  name        = "${var.eks_cluster_name}-eks-private-ingress"
   description = "Security group for the private ALB"
   vpc_id      = var.vpc_id
 
@@ -281,7 +281,7 @@ module "eks" {
 
     # tags = [
     #   {
-    #     "key"                 = "k8s.io/cluster-autoscaler/${module.ste_envs.aws_accounts[terraform.workspace]["account-name"]}-eks-cluster"
+    #     "key"                 = "k8s.io/cluster-autoscaler/${module.ste_envs.aws_accounts["account-name"]}-eks-cluster"
     #     "value"               = "owned"
     #     "propagate_at_launch" = true
     #   },
