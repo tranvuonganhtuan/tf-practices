@@ -24,7 +24,7 @@ module "vpc" {
 module "eks" {
   depends_on                 = [module.vpc]
   source                     = "./_modules/eks"
-  eks_cluster_name           = "${[terraform.workspace]}-eks-cluster"
+  eks_cluster_name           = "quyennv-eks-cluster"
   eks_cluser_enginee_version = "1.30"
   vpc_id                     = module.vpc.vpc_id
   private_subnet_ids         = module.vpc.private_subnet_id

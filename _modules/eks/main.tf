@@ -7,7 +7,7 @@ module "eks_nodes_custom_security_group" {
 
   name        = "${var.eks_cluster_name[terraform.workspace]}-eks-nodes-custom"
   description = "Additional security group for EKS Worker Nodes: E.g: ALB, VPN"
-  vpc_id      = module.vpc.vpc_id
+  vpc_id      = var.vpc_id
 
   ingress_with_source_security_group_id = [
     {
