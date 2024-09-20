@@ -29,7 +29,7 @@ module "eks" {
   vpc_id                     = module.vpc.vpc_id
   private_subnet_ids         = module.vpc.private_subnet_id
   instance_types             = ["t2.large", "t3.large", "t2.medium", "t3.medium"]
-  ami_id                     = "ami-066e69f6f03b5383e"
+  ami_id                     = "ami-0276c3cde3aab120f"
   tags                       = var.tags
 }
 

@@ -247,13 +247,6 @@ data "aws_iam_policy_document" "cluster_autoscaler" {
   }
 }
 
-data "aws_eks_cluster" "eks" {
-  name = module.eks.cluster_id
-}
-
-data "aws_eks_cluster_auth" "eks" {
-  name = module.eks.cluster_id
-}
 
 
 module "eks" {
@@ -347,8 +340,8 @@ resource "kubernetes_config_map" "aws_auth_configmap" {
     - "system:nodes"
 YAML
     mapUsers = <<YAML
-- "userarn": "arn:aws:iam::680287797588:user/inframanged"
-  "username": "inframanged"
+- "userarn": "arn:aws:iam::084375555299:user/quyennv_user"
+  "username": "quyennv_user"
   "groups":
     - "system:masters"
 YAML
