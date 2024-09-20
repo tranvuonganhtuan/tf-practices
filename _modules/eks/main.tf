@@ -1,6 +1,137 @@
 locals {
   region = data.aws_region.current.name
 }
+module "eks_public_alb" {
+  source  = "terraform-aws-modules/alb/aws"
+  version = "6.7.0"
+
+  name = "${var.eks_cluster_name[terraform.workspace]}-eks-private-ingress"
+
+  load_balancer_type         = "application"
+  enable_deletion_protection = false
+
+  internal = true
+
+  vpc_id          = module.vpc.vpc_id
+  subnets         = module.vpc.private_subnets
+  security_groups = [module.eks_public_alb_security_group.this_security_group_id]
+
+  target_groups = [
+    {
+      name             = "eks-public-alb-ingress"
+      backend_protocol = "HTTPS"
+      backend_port     = 32443
+      target_type      = "instance"
+      health_check = {
+        enabled             = true
+        interval            = 30
+        path                = "/healthz"
+        port                = "traffic-port"
+        healthy_threshold   = 3
+        unhealthy_threshold = 3
+        timeout             = 6
+        protocol            = "HTTPS"
+        matcher             = "200"
+      }
+    }
+  ]
+
+  http_tcp_listeners = [
+    {
+      port        = 80
+      protocol    = "HTTP"
+      action_type = "redirect"
+      redirect = {
+        port        = "443"
+        protocol    = "HTTPS"
+        status_code = "HTTP_301"
+      }
+    },
+  ]
+
+  #   https_listeners = [
+  #     {
+  #       port     = 443
+  #       protocol = "HTTPS"
+  #       # HG Cert is added further down
+  #       certificate_arn = module.public_domains_certificates_hg[0].this_acm_certificate_arn
+  #       action_type     = "fixed-response"
+  #       ssl_policy      = "ELBSecurityPolicy-FS-1-2-Res-2020-10"
+  #       fixed_response = {
+  #         content_type = "text/plain"
+  #         message_body = "Bad Request"
+  #         status_code  = "400"
+  #       }
+  #     }
+  #   ]
+
+  tags = var.tags
+}
+module "eks_private_alb" {
+  source  = "terraform-aws-modules/alb/aws"
+  version = "6.7.0"
+
+  name = "${var.eks_cluster_name[terraform.workspace]}-eks-private-ingress"
+
+  load_balancer_type         = "application"
+  enable_deletion_protection = false
+
+  internal = true
+
+  vpc_id          = var.vpc_id
+  subnets         = var.private_subnet_ids
+  security_groups = [module.eks_private_alb_security_group.this_security_group_id]
+
+  target_groups = [
+    {
+      name             = "eks-private-alb-ingress"
+      backend_protocol = "HTTPS"
+      backend_port     = 30443
+      target_type      = "instance"
+      health_check = {
+        enabled             = true
+        interval            = 30
+        path                = "/healthz"
+        port                = "traffic-port"
+        healthy_threshold   = 3
+        unhealthy_threshold = 3
+        timeout             = 6
+        protocol            = "HTTPS"
+        matcher             = "200"
+      }
+    }
+  ]
+
+  http_tcp_listeners = [
+    {
+      port        = 80
+      protocol    = "HTTP"
+      action_type = "redirect"
+      redirect = {
+        port        = "443"
+        protocol    = "HTTPS"
+        status_code = "HTTP_301"
+      }
+    },
+  ]
+
+  #   https_listeners = [
+  #     {
+  #       port            = 443
+  #       protocol        = "HTTPS"
+  #       certificate_arn = module.private_domains_certificates_hg[0].this_acm_certificate_arn
+  #       action_type     = "fixed-response"
+  #       ssl_policy      = "ELBSecurityPolicy-FS-1-2-Res-2020-10"
+  #       fixed_response = {
+  #         content_type = "text/plain"
+  #         message_body = "Bad Request"
+  #         status_code  = "400"
+  #       }
+  #     }
+  #   ]
+
+  tags = var.tags
+}
 module "eks_nodes_custom_security_group" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "3.18.0"
