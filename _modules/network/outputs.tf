@@ -13,7 +13,3 @@ output "private_subnet_id" {
   # value = data.aws_subnets.private.ids
   value = aws_subnet.private.*.id
 }
-
-output "public_subnet_ids" {
-  value = aws_subnet.public.*.id
-}

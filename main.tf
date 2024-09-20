@@ -20,6 +20,19 @@ module "vpc" {
   )
 }
 
+#CREATE THE EKS CLUSTER
+module "eks" {
+  depends_on                 = [module.vpc]
+  source                     = "./_modules/eks"
+  eks_cluster_name           = "${[terraform.workspace]}-eks-cluster"
+  eks_cluser_enginee_version = "1.30"
+  vpc_id                     = module.vpc.vpc_id
+  private_subnet_ids         = module.vpc.private_subnet_id
+  instance_types             = ["t2.large", "t3.large", "t2.medium", "t3.medium"]
+  ami_id                     = "ami-066e69f6f03b5383e"
+  tags                       = var.tags
+}
+
 #CALLING MODULE EC2 TO CREATE THE EC2 INSTANCE 
 
 module "ec2" {

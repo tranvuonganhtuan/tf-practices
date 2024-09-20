@@ -1,0 +1,230 @@
+locals {
+  region = data.aws_region.current.name
+}
+module "eks_nodes_custom_security_group" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "3.18.0"
+
+  name        = "${var.eks_cluster_name[terraform.workspace]}-eks-nodes-custom"
+  description = "Additional security group for EKS Worker Nodes: E.g: ALB, VPN"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress_with_source_security_group_id = [
+    {
+      from_port                = 32443
+      to_port                  = 32443
+      protocol                 = "tcp"
+      description              = "Public Ingress"
+      source_security_group_id = module.eks_public_alb_security_group.this_security_group_id
+    },
+    {
+      from_port                = 30443
+      to_port                  = 30443
+      protocol                 = "tcp"
+      description              = "Private Ingress"
+      source_security_group_id = module.eks_private_alb_security_group.this_security_group_id
+    },
+  ]
+
+  tags = var.tags
+}
+
+module "eks_public_alb_security_group" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "3.18.0"
+
+  name        = "${var.eks_cluster_name[terraform.workspace]}-eks-public-ingress"
+  description = "Security group for the public ALB"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress_cidr_blocks = ["0.0.0.0/0"]
+  ingress_rules       = ["http-80-tcp", "https-443-tcp"]
+  egress_rules        = ["all-tcp"]
+
+  tags = lvar.tags
+}
+
+module "eks_private_alb_security_group" {
+  source  = "terraform-aws-modules/security-group/aws"
+  version = "3.18.0"
+
+  name        = "${var.eks_cluster_name[terraform.workspace]}-eks-private-ingress"
+  description = "Security group for the private ALB"
+  vpc_id      = module.vpc.vpc_id
+
+  ingress_cidr_blocks = ["0.0.0.0/0"]
+  ingress_rules       = ["http-80-tcp", "https-443-tcp"]
+  egress_rules        = ["all-tcp"]
+
+  tags = var.tags
+}
+module "cluster_autoscaler_iam_assumable_role_admin" {
+  source                        = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
+  version                       = "5.44.0"
+  create_role                   = true
+  role_name                     = "${var.eks_cluster_name}-eks-cluster-autoscaler"
+  provider_url                  = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
+  role_policy_arns              = [aws_iam_policy.cluster_autoscaler.arn]
+  oidc_fully_qualified_subjects = ["system:serviceaccount:kube-system:cluster-autoscaler"]
+}
+
+resource "aws_iam_policy" "cluster_autoscaler" {
+  name_prefix = "${var.eks_cluser_enginee_version}-eks-cluster-autoscaler"
+  description = "EKS cluster-autoscaler policy for cluster ${module.eks.cluster_id}"
+  policy      = data.aws_iam_policy_document.cluster_autoscaler.json
+}
+
+data "aws_iam_policy_document" "cluster_autoscaler" {
+  statement {
+    sid    = "clusterAutoscalerAll"
+    effect = "Allow"
+
+    actions = [
+      "autoscaling:DescribeAutoScalingGroups",
+      "autoscaling:DescribeAutoScalingInstances",
+      "autoscaling:DescribeLaunchConfigurations",
+      "autoscaling:DescribeTags",
+      "ec2:DescribeLaunchTemplateVersions",
+    ]
+
+    resources = ["*"]
+  }
+
+  statement {
+    sid    = "clusterAutoscalerOwn"
+    effect = "Allow"
+
+    actions = [
+      "autoscaling:SetDesiredCapacity",
+      "autoscaling:TerminateInstanceInAutoScalingGroup",
+      "autoscaling:UpdateAutoScalingGroup",
+    ]
+
+    resources = ["*"]
+
+    condition {
+      test     = "StringEquals"
+      variable = "autoscaling:ResourceTag/kubernetes.io/cluster/${module.eks.cluster_id}"
+      values   = ["owned"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "autoscaling:ResourceTag/k8s.io/cluster-autoscaler/enabled"
+      values   = ["true"]
+    }
+  }
+}
+
+data "aws_eks_cluster" "eks" {
+  name = module.eks.cluster_id
+}
+
+data "aws_eks_cluster_auth" "eks" {
+  name = module.eks.cluster_id
+}
+
+
+module "eks" {
+  source  = "terraform-aws-modules/eks/aws"
+  version = "20.24.1"
+  # manage_aws_auth = false
+
+  cluster_name    = var.eks_cluster_name
+  cluster_version = var.eks_cluser_enginee_version
+  vpc_id          = module.vpc.vpc_id
+  subnet_ids      = module.vpc.private_subnets
+
+  ## https://docs.aws.amazon.com/eks/latest/userguide/enable-iam-roles-for-service-accounts.html
+  # enable_irsa = true
+
+  self_managed_node_group_defaults = {
+
+    ami_id = "ami-01bb732da5029d896"
+    target_group_arns = concat(
+      module.eks_public_alb.target_group_arns,
+      module.eks_private_alb.target_group_arns
+    )
+
+    vpc_security_group_ids = [module.eks_nodes_custom_security_group.this_security_group_id]
+
+    # tags = [
+    #   {
+    #     "key"                 = "k8s.io/cluster-autoscaler/${module.ste_envs.aws_accounts[terraform.workspace]["account-name"]}-eks-cluster"
+    #     "value"               = "owned"
+    #     "propagate_at_launch" = true
+    #   },
+    #   {
+    #     "key"                 = "k8s.io/cluster-autoscaler/enabled"
+    #     "value"               = "true"
+    #     "propagate_at_launch" = true
+    #   }
+    # ]
+
+  }
+
+
+  self_managed_node_groups = [
+
+    for private_subnet in var.private_subnet_ids : {
+      worker_group = {
+        name          = "${var.eks_cluser_enginee_version}-eks-worker-ondemand-${private_subnet}"
+        instance_type = var.var.instance_types
+        subnets       = tolist([private_subnet])
+
+        ami_id = var.ami_id
+
+        max_size            = var.min_size
+        min_size            = var.max_size
+        desired_size        = var.desired_size
+        kubelete_extra_args = "-kubelet-extra-args '--node-labels=kubernetes.io/lifecycle=normal'"
+        public_ip           = false
+
+        # root_volume_type = "gp2"
+        block_device_mappings = {
+          xvda = {
+            device_name = "/dev/xvda"
+            ebs = {
+              delete_on_termination = true
+              encrypted             = true
+              volume_size           = 100
+              volume_type           = "gp2"
+            }
+          }
+        }
+      }
+    }
+  ]
+  tags = var.tags
+}
+
+resource "kubernetes_config_map" "aws_auth_configmap" {
+
+  metadata {
+    name      = "aws-auth"
+    namespace = "kube-system"
+  }
+
+  data = {
+    mapRoles = <<YAML
+- "rolearn": "${module.eks.cluster_iam_role_arn}"
+  "username": "system:node:{{EC2PrivateDNSName}}"
+  "groups":
+    - "system:bootstrappers"
+    - "system:nodes"
+YAML
+    mapUsers = <<YAML
+- "userarn": "arn:aws:iam::680287797588:user/inframanged"
+  "username": "inframanged"
+  "groups":
+    - "system:masters"
+YAML
+  }
+
+
+  lifecycle {
+    ignore_changes = [
+      metadata["annotations"], metadata["labels"],
+    ]
+  }
+}
