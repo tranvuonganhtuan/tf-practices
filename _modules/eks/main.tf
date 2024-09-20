@@ -1,251 +1,251 @@
-locals {
-  region = data.aws_region.current.name
-}
-module "eks_public_alb" {
-  source  = "terraform-aws-modules/alb/aws"
-  version = "6.7.0"
+# locals {
+#   region = data.aws_region.current.name
+# }
+# module "eks_public_alb" {
+#   source  = "terraform-aws-modules/alb/aws"
+#   version = "6.7.0"
 
-  name = "${var.eks_cluster_name}-eks-private-ingress"
+#   name = "${var.eks_cluster_name}-eks-private-ingress"
 
-  load_balancer_type         = "application"
-  enable_deletion_protection = false
+#   load_balancer_type         = "application"
+#   enable_deletion_protection = false
 
-  internal = true
+#   internal = true
 
-  vpc_id          = var.vpc_id
-  subnets         = var.private_subnet_ids
-  security_groups = [module.eks_public_alb_security_group.this_security_group_id]
+#   vpc_id          = var.vpc_id
+#   subnets         = var.private_subnet_ids
+#   security_groups = [module.eks_public_alb_security_group.this_security_group_id]
 
-  target_groups = [
-    {
-      name             = "eks-public-alb-ingress"
-      backend_protocol = "HTTPS"
-      backend_port     = 32443
-      target_type      = "instance"
-      health_check = {
-        enabled             = true
-        interval            = 30
-        path                = "/healthz"
-        port                = "traffic-port"
-        healthy_threshold   = 3
-        unhealthy_threshold = 3
-        timeout             = 6
-        protocol            = "HTTPS"
-        matcher             = "200"
-      }
-    }
-  ]
+#   target_groups = [
+#     {
+#       name             = "eks-public-alb-ingress"
+#       backend_protocol = "HTTPS"
+#       backend_port     = 32443
+#       target_type      = "instance"
+#       health_check = {
+#         enabled             = true
+#         interval            = 30
+#         path                = "/healthz"
+#         port                = "traffic-port"
+#         healthy_threshold   = 3
+#         unhealthy_threshold = 3
+#         timeout             = 6
+#         protocol            = "HTTPS"
+#         matcher             = "200"
+#       }
+#     }
+#   ]
 
-  http_tcp_listeners = [
-    {
-      port        = 80
-      protocol    = "HTTP"
-      action_type = "redirect"
-      redirect = {
-        port        = "443"
-        protocol    = "HTTPS"
-        status_code = "HTTP_301"
-      }
-    },
-  ]
+#   http_tcp_listeners = [
+#     {
+#       port        = 80
+#       protocol    = "HTTP"
+#       action_type = "redirect"
+#       redirect = {
+#         port        = "443"
+#         protocol    = "HTTPS"
+#         status_code = "HTTP_301"
+#       }
+#     },
+#   ]
 
-  #   https_listeners = [
-  #     {
-  #       port     = 443
-  #       protocol = "HTTPS"
-  #       # HG Cert is added further down
-  #       certificate_arn = module.public_domains_certificates_hg[0].this_acm_certificate_arn
-  #       action_type     = "fixed-response"
-  #       ssl_policy      = "ELBSecurityPolicy-FS-1-2-Res-2020-10"
-  #       fixed_response = {
-  #         content_type = "text/plain"
-  #         message_body = "Bad Request"
-  #         status_code  = "400"
-  #       }
-  #     }
-  #   ]
+#   #   https_listeners = [
+#   #     {
+#   #       port     = 443
+#   #       protocol = "HTTPS"
+#   #       # HG Cert is added further down
+#   #       certificate_arn = module.public_domains_certificates_hg[0].this_acm_certificate_arn
+#   #       action_type     = "fixed-response"
+#   #       ssl_policy      = "ELBSecurityPolicy-FS-1-2-Res-2020-10"
+#   #       fixed_response = {
+#   #         content_type = "text/plain"
+#   #         message_body = "Bad Request"
+#   #         status_code  = "400"
+#   #       }
+#   #     }
+#   #   ]
 
-  tags = var.tags
-}
-module "eks_private_alb" {
-  source  = "terraform-aws-modules/alb/aws"
-  version = "6.7.0"
+#   tags = var.tags
+# }
+# module "eks_private_alb" {
+#   source  = "terraform-aws-modules/alb/aws"
+#   version = "6.7.0"
 
-  name = "${var.eks_cluster_name}-eks-private-ingress"
+#   name = "${var.eks_cluster_name}-eks-private-ingress"
 
-  load_balancer_type         = "application"
-  enable_deletion_protection = false
+#   load_balancer_type         = "application"
+#   enable_deletion_protection = false
 
-  internal = true
+#   internal = true
 
-  vpc_id          = var.vpc_id
-  subnets         = var.private_subnet_ids
-  security_groups = [module.eks_private_alb_security_group.this_security_group_id]
+#   vpc_id          = var.vpc_id
+#   subnets         = var.private_subnet_ids
+#   security_groups = [module.eks_private_alb_security_group.this_security_group_id]
 
-  target_groups = [
-    {
-      name             = "eks-private-alb-ingress"
-      backend_protocol = "HTTPS"
-      backend_port     = 30443
-      target_type      = "instance"
-      health_check = {
-        enabled             = true
-        interval            = 30
-        path                = "/healthz"
-        port                = "traffic-port"
-        healthy_threshold   = 3
-        unhealthy_threshold = 3
-        timeout             = 6
-        protocol            = "HTTPS"
-        matcher             = "200"
-      }
-    }
-  ]
+#   target_groups = [
+#     {
+#       name             = "eks-private-alb-ingress"
+#       backend_protocol = "HTTPS"
+#       backend_port     = 30443
+#       target_type      = "instance"
+#       health_check = {
+#         enabled             = true
+#         interval            = 30
+#         path                = "/healthz"
+#         port                = "traffic-port"
+#         healthy_threshold   = 3
+#         unhealthy_threshold = 3
+#         timeout             = 6
+#         protocol            = "HTTPS"
+#         matcher             = "200"
+#       }
+#     }
+#   ]
 
-  http_tcp_listeners = [
-    {
-      port        = 80
-      protocol    = "HTTP"
-      action_type = "redirect"
-      redirect = {
-        port        = "443"
-        protocol    = "HTTPS"
-        status_code = "HTTP_301"
-      }
-    },
-  ]
+#   http_tcp_listeners = [
+#     {
+#       port        = 80
+#       protocol    = "HTTP"
+#       action_type = "redirect"
+#       redirect = {
+#         port        = "443"
+#         protocol    = "HTTPS"
+#         status_code = "HTTP_301"
+#       }
+#     },
+#   ]
 
-  #   https_listeners = [
-  #     {
-  #       port            = 443
-  #       protocol        = "HTTPS"
-  #       certificate_arn = module.private_domains_certificates_hg[0].this_acm_certificate_arn
-  #       action_type     = "fixed-response"
-  #       ssl_policy      = "ELBSecurityPolicy-FS-1-2-Res-2020-10"
-  #       fixed_response = {
-  #         content_type = "text/plain"
-  #         message_body = "Bad Request"
-  #         status_code  = "400"
-  #       }
-  #     }
-  #   ]
+#   #   https_listeners = [
+#   #     {
+#   #       port            = 443
+#   #       protocol        = "HTTPS"
+#   #       certificate_arn = module.private_domains_certificates_hg[0].this_acm_certificate_arn
+#   #       action_type     = "fixed-response"
+#   #       ssl_policy      = "ELBSecurityPolicy-FS-1-2-Res-2020-10"
+#   #       fixed_response = {
+#   #         content_type = "text/plain"
+#   #         message_body = "Bad Request"
+#   #         status_code  = "400"
+#   #       }
+#   #     }
+#   #   ]
 
-  tags = var.tags
-}
-module "eks_nodes_custom_security_group" {
-  source  = "terraform-aws-modules/security-group/aws"
-  version = "3.18.0"
+#   tags = var.tags
+# }
+# module "eks_nodes_custom_security_group" {
+#   source  = "terraform-aws-modules/security-group/aws"
+#   version = "3.18.0"
 
-  name        = "${var.eks_cluster_name}-eks-nodes-custom"
-  description = "Additional security group for EKS Worker Nodes: E.g: ALB, VPN"
-  vpc_id      = var.vpc_id
+#   name        = "${var.eks_cluster_name}-eks-nodes-custom"
+#   description = "Additional security group for EKS Worker Nodes: E.g: ALB, VPN"
+#   vpc_id      = var.vpc_id
 
-  ingress_with_source_security_group_id = [
-    {
-      from_port                = 32443
-      to_port                  = 32443
-      protocol                 = "tcp"
-      description              = "Public Ingress"
-      source_security_group_id = module.eks_public_alb_security_group.this_security_group_id
-    },
-    {
-      from_port                = 30443
-      to_port                  = 30443
-      protocol                 = "tcp"
-      description              = "Private Ingress"
-      source_security_group_id = module.eks_private_alb_security_group.this_security_group_id
-    },
-  ]
+#   ingress_with_source_security_group_id = [
+#     {
+#       from_port                = 32443
+#       to_port                  = 32443
+#       protocol                 = "tcp"
+#       description              = "Public Ingress"
+#       source_security_group_id = module.eks_public_alb_security_group.this_security_group_id
+#     },
+#     {
+#       from_port                = 30443
+#       to_port                  = 30443
+#       protocol                 = "tcp"
+#       description              = "Private Ingress"
+#       source_security_group_id = module.eks_private_alb_security_group.this_security_group_id
+#     },
+#   ]
 
-  tags = var.tags
-}
+#   tags = var.tags
+# }
 
-module "eks_public_alb_security_group" {
-  source  = "terraform-aws-modules/security-group/aws"
-  version = "3.18.0"
+# module "eks_public_alb_security_group" {
+#   source  = "terraform-aws-modules/security-group/aws"
+#   version = "3.18.0"
 
-  name        = "${var.eks_cluster_name}-eks-public-ingress"
-  description = "Security group for the public ALB"
-  vpc_id      = var.vpc_id
+#   name        = "${var.eks_cluster_name}-eks-public-ingress"
+#   description = "Security group for the public ALB"
+#   vpc_id      = var.vpc_id
 
-  ingress_cidr_blocks = ["0.0.0.0/0"]
-  ingress_rules       = ["http-80-tcp", "https-443-tcp"]
-  egress_rules        = ["all-tcp"]
+#   ingress_cidr_blocks = ["0.0.0.0/0"]
+#   ingress_rules       = ["http-80-tcp", "https-443-tcp"]
+#   egress_rules        = ["all-tcp"]
 
-  tags = var.tags
-}
+#   tags = var.tags
+# }
 
-module "eks_private_alb_security_group" {
-  source  = "terraform-aws-modules/security-group/aws"
-  version = "3.18.0"
+# module "eks_private_alb_security_group" {
+#   source  = "terraform-aws-modules/security-group/aws"
+#   version = "3.18.0"
 
-  name        = "${var.eks_cluster_name}-eks-private-ingress"
-  description = "Security group for the private ALB"
-  vpc_id      = var.vpc_id
+#   name        = "${var.eks_cluster_name}-eks-private-ingress"
+#   description = "Security group for the private ALB"
+#   vpc_id      = var.vpc_id
 
-  ingress_cidr_blocks = ["0.0.0.0/0"]
-  ingress_rules       = ["http-80-tcp", "https-443-tcp"]
-  egress_rules        = ["all-tcp"]
+#   ingress_cidr_blocks = ["0.0.0.0/0"]
+#   ingress_rules       = ["http-80-tcp", "https-443-tcp"]
+#   egress_rules        = ["all-tcp"]
 
-  tags = var.tags
-}
-module "cluster_autoscaler_iam_assumable_role_admin" {
-  source                        = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
-  version                       = "5.44.0"
-  create_role                   = true
-  role_name                     = "${var.eks_cluster_name}-eks-cluster-autoscaler"
-  provider_url                  = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
-  role_policy_arns              = [aws_iam_policy.cluster_autoscaler.arn]
-  oidc_fully_qualified_subjects = ["system:serviceaccount:kube-system:cluster-autoscaler"]
-}
+#   tags = var.tags
+# }
+# module "cluster_autoscaler_iam_assumable_role_admin" {
+#   source                        = "terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc"
+#   version                       = "5.44.0"
+#   create_role                   = true
+#   role_name                     = "${var.eks_cluster_name}-eks-cluster-autoscaler"
+#   provider_url                  = replace(module.eks.cluster_oidc_issuer_url, "https://", "")
+#   role_policy_arns              = [aws_iam_policy.cluster_autoscaler.arn]
+#   oidc_fully_qualified_subjects = ["system:serviceaccount:kube-system:cluster-autoscaler"]
+# }
 
-resource "aws_iam_policy" "cluster_autoscaler" {
-  name_prefix = "${var.eks_cluser_enginee_version}-eks-cluster-autoscaler"
-  description = "EKS cluster-autoscaler policy for cluster ${module.eks.cluster_id}"
-  policy      = data.aws_iam_policy_document.cluster_autoscaler.json
-}
+# resource "aws_iam_policy" "cluster_autoscaler" {
+#   name_prefix = "${var.eks_cluser_enginee_version}-eks-cluster-autoscaler"
+#   description = "EKS cluster-autoscaler policy for cluster ${module.eks.cluster_id}"
+#   policy      = data.aws_iam_policy_document.cluster_autoscaler.json
+# }
 
-data "aws_iam_policy_document" "cluster_autoscaler" {
-  statement {
-    sid    = "clusterAutoscalerAll"
-    effect = "Allow"
+# data "aws_iam_policy_document" "cluster_autoscaler" {
+#   statement {
+#     sid    = "clusterAutoscalerAll"
+#     effect = "Allow"
 
-    actions = [
-      "autoscaling:DescribeAutoScalingGroups",
-      "autoscaling:DescribeAutoScalingInstances",
-      "autoscaling:DescribeLaunchConfigurations",
-      "autoscaling:DescribeTags",
-      "ec2:DescribeLaunchTemplateVersions",
-    ]
+#     actions = [
+#       "autoscaling:DescribeAutoScalingGroups",
+#       "autoscaling:DescribeAutoScalingInstances",
+#       "autoscaling:DescribeLaunchConfigurations",
+#       "autoscaling:DescribeTags",
+#       "ec2:DescribeLaunchTemplateVersions",
+#     ]
 
-    resources = ["*"]
-  }
+#     resources = ["*"]
+#   }
 
-  statement {
-    sid    = "clusterAutoscalerOwn"
-    effect = "Allow"
+#   statement {
+#     sid    = "clusterAutoscalerOwn"
+#     effect = "Allow"
 
-    actions = [
-      "autoscaling:SetDesiredCapacity",
-      "autoscaling:TerminateInstanceInAutoScalingGroup",
-      "autoscaling:UpdateAutoScalingGroup",
-    ]
+#     actions = [
+#       "autoscaling:SetDesiredCapacity",
+#       "autoscaling:TerminateInstanceInAutoScalingGroup",
+#       "autoscaling:UpdateAutoScalingGroup",
+#     ]
 
-    resources = ["*"]
+#     resources = ["*"]
 
-    condition {
-      test     = "StringEquals"
-      variable = "autoscaling:ResourceTag/kubernetes.io/cluster/${module.eks.cluster_id}"
-      values   = ["owned"]
-    }
+#     condition {
+#       test     = "StringEquals"
+#       variable = "autoscaling:ResourceTag/kubernetes.io/cluster/${module.eks.cluster_id}"
+#       values   = ["owned"]
+#     }
 
-    condition {
-      test     = "StringEquals"
-      variable = "autoscaling:ResourceTag/k8s.io/cluster-autoscaler/enabled"
-      values   = ["true"]
-    }
-  }
-}
+#     condition {
+#       test     = "StringEquals"
+#       variable = "autoscaling:ResourceTag/k8s.io/cluster-autoscaler/enabled"
+#       values   = ["true"]
+#     }
+#   }
+# }
 
 
 
