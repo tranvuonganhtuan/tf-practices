@@ -12,8 +12,8 @@ module "eks_public_alb" {
 
   internal = true
 
-  vpc_id          = module.vpc.vpc_id
-  subnets         = module.vpc.private_subnets
+  vpc_id          = var.vpc_id
+  subnets         = var.private_subnet_ids
   security_groups = [module.eks_public_alb_security_group.this_security_group_id]
 
   target_groups = [
