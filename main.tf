@@ -33,6 +33,14 @@ module "eks" {
   tags                       = var.tags
 }
 
+#SETUP AUTOSCALLER for EKS
+module "k8sscaler" {
+  depends_on       = [module.vpc, module.eks]
+  source           = "./_modules/autoscaler"
+  cluster_id       = module.eks.cluster_id
+  eks_cluster_name = module.eks.cluster_name
+}
+
 #CALLING MODULE EC2 TO CREATE THE EC2 INSTANCE 
 
 module "ec2" {
