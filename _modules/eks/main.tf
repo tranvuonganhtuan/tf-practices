@@ -298,6 +298,8 @@ module "eks" {
   self_managed_node_groups = [
 
     for private_subnet in var.private_subnet_ids : {
+      launch_template_name = var.eks_cluster_name
+
       worker_group = {
         name          = "${var.eks_cluser_enginee_version}-eks-worker-ondemand-${private_subnet}"
         instance_type = var.instance_types
